@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+  <!-- Load d3.js -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-scale-chromatic@2.0.0"></script>
+  <script src="https://cdn.jsdelivr.net/npm/d3-geo@3.1.0/dist/d3-geo.min.js"></script>
+  
+
+</head>
+
+<body>
+  <!-- Create an element where the map will take place -->
+  <svg id="my_dataviz" width="1000" height="550"></svg>
+  <script>
+
+    // The svg
+    var svg = d3.select("#my_dataviz"),
+      width = +svg.attr("width"),
+      height = +svg.attr("height");
+
+    // Map and projection
+    
+
+    // Data and color scale
+    var data = new Map();
+    var selectedStates = [];
+
+    var colorScale = d3.scaleThreshold()
+      .domain([100000, 1000000, 10000000, 30000000, 100000000, 500000000])
+      .range(d3.schemeBlues[7]);
+
+    // Load external data and boot
+    Promise.all([
+      d3.json("StHimark.geojson"),
+      // d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world.geojson"),
+      d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/world_population.csv")
+    ]).then(function (files) {
+      var topo = files[0];
+      var csvData = files[1];
+
+      let projection = d3.geoMercator()
+      .scale(135000)
+      .center(d3.geoCentroid(topo))
+      .translate([(width/2),height/2]);
+
+      let path = d3.geoPath().projection(projection);
+    
+      // csvData.forEach(function (d) {
+      //   data.set(d.code, +d.pop);
+      // });
+
+      let mouseOver = function(d) {
+        d3.selectAll(".Country")
+          .transition()
+          .duration(200)
+          .style("opacity", .5)
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .style("opacity", 1)
+          .style("stroke", "black")
+      }
+
+      let mouseLeave = function(d) {
+        d3.selectAll(".Country")
+          .transition()
+          .duration(200)
+          .style("opacity", .8)
+        d3.select(this)
+          .transition()
+          .duration(200)
+          .style("stroke", "transparent")
+      }
+
+      let click = function(d) {
+        const selected = d.properties.Nbrhood;
+        const index = selectedStates.indexOf(selected);
+
+        if (d && d.properties && d.properties.Nbrhood) {
+          const selected = d.properties.Nbrhood;
+          const index = selectedStates.indexOf(selected);
+
+          if (index > -1) {
+            // Remove from selected states
+            selectedStates.splice(index, 1);
+          } else {
+            // Add to selected states
+            selectedStates.push(selected);
+          }
+        }
+
+        // Highlight selected states
+        g.selectAll("path")
+          .style("opacity", function(state) {
+            return selectedStates.includes(state.properties.Nbrhood) ? 1 : 0.5;
+          });
+
+        console.log(selectedStates);
+      };
+
+      // Draw the map
+
+      // var pathGenerator = d3.geoPath(projection);
+      let g = svg.append("g")
+      g.selectAll("path")
+      .data(topo.features)
+      .enter()
+      .append("path")
+      .attr("d",path)
+      .attr("id", function(d){return d.properties.Nbrhood})
+      .attr("class", function(d){ console.log(); return "Country" })
+      .style("stroke-width", "2")
+      .style("stroke","#fff")
+      .on("mouseover", mouseOver )
+      .on("mouseleave", mouseLeave )
+
+      // g.selectAll("path")
+      // .data(topo.features)
+      // .enter()
+      // .append("path")
+      // .attr("d", path)
+      // .attr("id", function(d) { console.log(d); return d.properties.Nbrhood; })
+      // .attr("class", function(d) { return "Country"; })
+      // .style("stroke-width", "2")
+      // .style("stroke", "#fff")
+      // .style("opacity", 0.5)
+      // .on("mouseover", mouseOver)
+      // .on("mouseleave", mouseLeave)
+      // .on("click", click);
+
+    }).catch(function (error) {
+      console.log(error);
+    });
+  </script>
+</body>
+</html>
